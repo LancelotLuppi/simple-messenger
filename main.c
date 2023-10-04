@@ -21,5 +21,10 @@ typedef struct Queue {
 }
 
 int main() {
+    Actor* emissores = NULL;
+    Actor* receptores = NULL;
+    Queue* message_queue = NULL;
+
+
     return 0;
 }
