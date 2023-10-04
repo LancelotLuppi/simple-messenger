@@ -20,6 +20,18 @@ typedef struct Queue {
     struct Message* messages;
 }
 
+
+// TODO: fazer as implementacoes dos seguintes metodos:
+void insertActor();
+void removeActor();
+void listActors();
+
+void sendMessage();
+void removeMessage();
+
+void listMessagesByReceptor();
+//------------------------------------------------------
+
 int main() {
     Actor* emissores = NULL;
     Actor* receptores = NULL;
