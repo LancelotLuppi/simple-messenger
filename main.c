@@ -18,7 +18,7 @@ typedef struct Message {
 typedef struct Queue {
     int id_receptor;
     struct Message* messages;
-}
+} Queue;
 
 
 // TODO: fazer as implementacoes dos seguintes metodos:
@@ -35,7 +35,7 @@ void listMessagesByReceptor();
 int main() {
     Actor* emissores = NULL;
     Actor* receptores = NULL;
-    Queue* message_queue = NULL;
+    Queue* message_queues = NULL;
 
 
     return 0;
