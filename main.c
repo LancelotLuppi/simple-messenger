@@ -29,21 +29,17 @@ typedef struct Queue {
 } Queue;
 
 // TODO: fazer as implementacoes dos seguintes metodos:
-void insertActor();
+void insertActor(Actor **list, Actor *actor) {
+    Actor *aux = *list;
+
+    while(aux->)
+}
 void removeActor();
 void listActors();
 
-/* TODO:
- *  Aqui a ideia seria retornar uma nova lista
- *  com cada elemento apontando para uma queue
- *  pertencente ao id do receptor da lista.
- *
- */
-Queue *getQueueByReceptors(int id_receptor[], Queue *queues) {}
-
-void enqueue(Message *newMessage, Queue queue) {
-  Message *aux = malloc(sizeof(Message));
-  Message **messages = (Message **)queue.messages;
+void enqueue(Message *newMessage, Queue *queue) {
+  Message *aux;
+  Message **messages = (Message **)queue->messages;
   if (*messages == NULL) {
     *messages = newMessage;
   } else {
@@ -56,7 +52,7 @@ void enqueue(Message *newMessage, Queue queue) {
 /*TODO:
  *  Validar se o metodo esta funcional.
  */
-void sendMessage(Queue **queue, Actor emissor, char content[]) {
+void sendMessage(Queue **queue, Actor emissor, int id_receptor, char content[]) {
   Message *message = malloc(sizeof(Message));
   Queue *aux = malloc(sizeof(Queue));
   if (message && aux) {
@@ -64,8 +60,10 @@ void sendMessage(Queue **queue, Actor emissor, char content[]) {
     strcpy(message->content, content);
 
     aux = *queue;
-    while (aux) {
-      enqueue(message, **queue);
+    while (aux->next) {
+        if(aux->id_receptor == id_receptor) {
+            enqueue(message, aux);
+        }
       aux = aux->next;
     }
   } else {
@@ -155,12 +153,6 @@ void showInterface() {
   };
 }
 //------------------------------------------------------
-
-// Retorna o tamanho máximo do array
-int getArraySize(int arr[]) {
-  int len = sizeof(arr) / sizeof(int);
-  return len;
-}
 
 int main() {
   Actor *emissores = NULL;

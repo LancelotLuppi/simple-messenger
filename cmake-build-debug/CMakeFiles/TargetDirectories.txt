@@ -1,3 +1,3 @@
-D:/github/simple-messenger/cmake-build-debug/CMakeFiles/simple_messenger.dir
-D:/github/simple-messenger/cmake-build-debug/CMakeFiles/edit_cache.dir
-D:/github/simple-messenger/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/gabriel.luppi/Documents/github/simple-messenger/cmake-build-debug/CMakeFiles/simple_messenger.dir
+C:/Users/gabriel.luppi/Documents/github/simple-messenger/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/gabriel.luppi/Documents/github/simple-messenger/cmake-build-debug/CMakeFiles/rebuild_cache.dir
