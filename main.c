@@ -3,9 +3,6 @@
 #include "string.h"
 #include "unistd.h"
 
-// Tempo de espera de 1 segundo para o usuário ler a mensagem da interface
-int SLEEP_TIME = 1;
-
 #define ARR_SIZE(a) (sizeof(a) / sizeof(*a))
 
 // Pode representar Receptor ou Emissor
@@ -30,14 +27,36 @@ typedef struct Queue {
 } Queue;
 
 void operationError() {
-  printf("\nERROR: Não foi possível realizar a operação.\n");
-  return;
+  fprintf(stderr, "Não foi possível realizar a operação.\n");
 }
-// TODO: fazer as implementacoes dos seguintes metodos:
-void insertActor(Actors *head) {
+void memoryAllocationError() {
+  fprintf(stderr, "Não foi possível alocar memória com sucesso.\n");
+}
+
+void listActors(Actors *head) {
+  Actors *aux = head;
+  if (aux) {
+    printf("\nID: %d\n", aux->id);
+    printf("Nome: %s\n", aux->name);
+    printf("----------- // -----------\n");
+    while (aux->next) {
+      aux = aux->next;
+      printf("\nID: %d\n", aux->id);
+      printf("Nome: %s\n", aux->name);
+      printf("----------- // -----------\n");
+    };
+    printf("\n");
+  } else {
+    printf("\nNenhum registro foi encontrado.\n");
+  }
+};
+
+void insertActor(Actors **head) {
   printf("\nDigite o Id (Inteiro positivo):\n");
   int id;
   char name[15];
+  Actors *newActor = (Actors *)malloc(sizeof(Actors));
+  Actors *aux = *head;
 
   // If there is less than or more than one successful scan it should error
   if (scanf("%d", &id) != 1) {
@@ -47,25 +66,27 @@ void insertActor(Actors *head) {
   if (scanf("%14s", name) != 1) {
     return operationError();
   };
-  Actors *newActor = malloc(sizeof(Actors));
   newActor->id = id;
   strcpy(newActor->name, name);
-  newActor->next = NULL;
 
-  Actors *aux = head;
-
-  while (aux->next) {
-    if (aux->id == newActor->id) {
-      printf("\nERROR: Esse ator já existe!\n");
-      return;
+  if (aux) {
+    while (aux->next) {
+      if (aux->id == newActor->id) {
+        fprintf(stderr, "Esse ator já existe!\n");
+        free(newActor);
+        return;
+      }
+      aux = aux->next;
     }
-    aux = aux->next;
+    aux->next = newActor;
+  } else {
+    *head = newActor;
   }
-
-  aux->next = newActor;
+  printf("\nInserido!\n\n");
 }
 
-void removeActor(Actors *head) {
+void removeActor(Actors **head) {
+  listActors(*head);
   int id;
   printf("\nDigite o Id (Inteiro positivo):\n");
   // If there is less than or more than one successful scan it should error
@@ -73,10 +94,10 @@ void removeActor(Actors *head) {
     return operationError();
   };
 
-  Actors *aux = head;
+  Actors *aux = *head;
 
   if (aux->id == id) {
-    head = aux->next;
+    *head = aux->next;
   } else {
     Actors *prev;
     while (aux->id != id && aux->next) {
@@ -86,23 +107,10 @@ void removeActor(Actors *head) {
     prev->next = aux->next;
   }
   if (aux) {
-    printf("\nRemovendo...\n");
+    printf("\nRemovido!\n");
     free(aux);
   } else {
-    printf("\nID não encontrado.n");
-  }
-};
-
-void listActors(Actors *head) {
-  Actors *aux = head;
-  if (aux) {
-    do {
-      printf("\nID: %d\n", aux->id);
-      printf("Nome: %s\n", aux->name);
-      aux = aux->next;
-    } while (aux->next);
-  } else {
-    printf("\nNenhum registro foi encontrado.\n");
+    printf("\nID não encontrado.\n");
   }
 };
 
@@ -118,18 +126,49 @@ void enqueue(Message *newMessage, Queue *queue) {
     aux->next = newMessage;
   }
 }
-/*TODO:
- *  Validar se o metodo esta funcional.
- */
-void sendMessage(Queue **queue, Actors emissor, int id_receptor,
-                 char content[]) {
+
+void dequeue(Queue *queue) {
+  Message **messages = (Message **)queue->messages;
+  Message *aux = *messages;
+
+  if (*messages == NULL) {
+    printf("\nA fila já está vazia!\n");
+  } else {
+    *messages = aux->next;
+    free(aux);
+  }
+}
+
+char *inputMessage() {
+  char *message = (char *)malloc(sizeof(char) * 50);
+
+  printf("\nDigite a mensagem a ser enviada:\n");
+  scanf("%49s", message);
+  printf("\n");
+  return message;
+}
+
+Actors *selectActor(Actors *head) {
+  int actorId = 0;
+  Actors *aux = head;
+
+  listActors(head);
+  scanf("%d", &actorId);
+  while (aux->next && aux->id != actorId) {
+    aux = aux->next;
+  }
+  return aux;
+}
+
+void sendMessage(Queue **queue, Actors *emissor, int id_receptor,
+                 char *content) {
   Message *message = malloc(sizeof(Message));
   Queue *aux = malloc(sizeof(Queue));
   if (message && aux) {
-    message->id_emissor = emissor.id;
+    message->id_emissor = emissor->id;
     strcpy(message->content, content);
-
     aux = *queue;
+    // erro
     while (aux->next) {
       if (aux->id_receptor == id_receptor) {
         enqueue(message, aux);
@@ -137,19 +176,38 @@ void sendMessage(Queue **queue, Actors emissor, int id_receptor,
       aux = aux->next;
     }
   } else {
-    printf("Nao foi possivel alocar memoria da mensagem.");
+    memoryAllocationError();
   }
 }
 
-void removeMessage();
+void listMessagesByReceptor(Queue *queue, int id_receptor) {
+  Queue *queueAux = queue;
+  if (queueAux) {
+    do {
+      if (queueAux->id_receptor == id_receptor) {
+        Message **messages = (Message **)queueAux->messages;
+        Message *aux = *messages;
 
-void listMessagesByReceptor();
+        if (messages) {
+          do {
+            printf("\nMensagem:\n");
+            printf("%s\n", aux->content);
+            aux = aux->next;
+
+          } while (aux->next);
+        }
+      }
+    } while (queueAux->next);
+  } else {
+    printf("\nNenhuma mensagem registrada para esse receptor\n");
+  }
+};
 
 //------------------------------------------------------
-// CLI  functions
+// CLI functions
 //------------------------------------------------------
-void showInterface(Actors *sender_head, Actors *receiver_head,
-                   Queue *messages) {
+void showInterface(Actors **sender_head, Actors **receiver_head,
+                   Queue **messages) {
   int userInput = -1;
 
   // TODO REVISAR OPERACOES POSSIVEIS
@@ -175,54 +233,64 @@ void showInterface(Actors *sender_head, Actors *receiver_head,
     printf("  9) Consultar fila de mensagens: exibe a fila de mensagens de um "
            "receptor \n");
     printf("  0) Fechar o programa.\n");
-    // printf("  10) Outras operações (a seu critério), como: exibir receptores
-    // "
-    //        "com fila vazia, exibir receptores com mais mensagens na fila, "
-    //        "exibir total de mensagens enviadas por um emissor, exibir total
-    //        de " "mensagens recebidas por um receptor \n");
+    // TODO AVALIAR FUNCOES POSSIVEIS
+    //  printf("  10) Outras operações (a seu critério), como: exibir receptores
+    //  "
+    //         "com fila vazia, exibir receptores com mais mensagens na fila, "
+    //         "exibir total de mensagens enviadas por um emissor, exibir total
+    //         de " "mensagens recebidas por um receptor \n");
 
     scanf("%d", &userInput);
 
-    // TODO ADICIONAR METODOS PARA CADA INPUT DO USUARIO
     switch (userInput) {
     case 0:
       printf("\n\n\n\nEncerrando... \n\n\n\n");
-      sleep(SLEEP_TIME);
       break;
     case 1:
       printf("\n\n\n\nIncluir emissor na lista de emissores \n\n\n\n");
-      sleep(SLEEP_TIME);
       insertActor(sender_head);
       break;
     case 2:
       printf("\n\n\n\nRemover emissor da lista de emissores \n\n\n\n");
-      sleep(SLEEP_TIME);
       removeActor(sender_head);
       break;
     case 3:
       printf("\n\n\n\nListar emissores \n\n\n\n");
-      sleep(SLEEP_TIME);
-      listActors(sender_head);
+      listActors(*sender_head);
       break;
     case 4:
       printf("\n\n\n\nIncluir receptor na lista de receptores\n\n\n\n");
-      sleep(SLEEP_TIME);
       insertActor(receiver_head);
       break;
     case 5:
       printf("\n\n\n\nRemover receptor da lista de receptores\n\n\n\n");
-      sleep(SLEEP_TIME);
       removeActor(receiver_head);
       break;
     case 6:
       printf("\n\n\n\nListar receptores\n\n\n\n");
-      sleep(SLEEP_TIME);
-      listActors(receiver_head);
+      listActors(*receiver_head);
+      break;
+    case 7:
+      printf("\n\n\n\nEnviar mensagem\n\n\n\n");
+
+      printf("\nDigite o id do emissor desejado:\n");
+      Actors *sender = selectActor(*sender_head);
+      printf("\nDigite o id do receptor desejado:\n");
+      int receiver_id = selectActor(*receiver_head)->id;
+      sendMessage(messages, sender, receiver_id, inputMessage());
+      break;
+    case 8:
+      printf("\n\n\n\nConcluir/remover mensagem\n\n\n\n");
+      dequeue(*messages);
+      break;
+    case 9:
+      printf("\n\n\n\nConsultar mensagens\n\n\n\n");
+      printf("\nDigite o id do receptor desejado:\n");
+      listMessagesByReceptor(*messages, selectActor(*receiver_head)->id);
       break;
 
     default:
       printf("\n\n\n\nNão foi possível compreender o comando! \n\n\n\n");
-      sleep(SLEEP_TIME);
       break;
     }
   };
@@ -234,7 +302,7 @@ int main() {
   Actors *receptores = NULL;
   Queue *message_queues = NULL;
 
-  showInterface(emissores, receptores, message_queues);
+  showInterface(&emissores, &receptores, &message_queues);
 
   return 0;
 }
