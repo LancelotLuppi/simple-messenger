@@ -3,204 +3,259 @@
 #include "string.h"
 #include "unistd.h"
 
-#define ARR_SIZE(a) (sizeof(a) / sizeof(*a))
+const int INDEX_SENDER = 0;
+const int INDEX_RECEIVER = 1;
+int SEQUENTIAL_ID[2];
 
 // Pode representar Receptor ou Emissor
 typedef struct Actors {
-  int id;
-  char name[15];
-  struct Actors *next;
+    int id;
+    char name[15];
+    struct Actors *next;
 } Actors;
 
 // Mensagens enviadas por um Emissor
 typedef struct Message {
-  int id_emissor;
-  char content[50];
-  struct Message *next;
+    int id_emissor;
+    char content[50];
+    struct Message *next;
 } Message;
 
 // Lista de mensagem aguardando o Receptor
 typedef struct Queue {
-  int id_receptor;
-  struct Message *messages;
-  struct Queue *next;
+    int id_receptor;
+    struct Message **messages;
+    struct Queue *next;
 } Queue;
 
 void operationError() {
-  fprintf(stderr, "Não foi possível realizar a operação.\n");
+    fprintf(stderr, "Não foi possível realizar a operação.\n");
 }
+
 void memoryAllocationError() {
-  fprintf(stderr, "Não foi possível alocar memória com sucesso.\n");
+    fprintf(stderr, "Não foi possível alocar memória com sucesso.\n");
 }
 
 void listActors(Actors *head) {
-  Actors *aux = head;
-  if (aux) {
-    printf("\nID: %d\n", aux->id);
-    printf("Nome: %s\n", aux->name);
-    printf("----------- // -----------\n");
-    while (aux->next) {
-      aux = aux->next;
-      printf("\nID: %d\n", aux->id);
-      printf("Nome: %s\n", aux->name);
-      printf("----------- // -----------\n");
-    };
-    printf("\n");
-  } else {
-    printf("\nNenhum registro foi encontrado.\n");
-  }
+    Actors *aux = head;
+    if (aux) {
+        while (aux != NULL) {
+            printf("\nID: %d\n", aux->id);
+            printf("Nome: %s\n", aux->name);
+            printf("----------- // -----------\n");
+            aux = aux->next;
+        }
+        printf("\n");
+    } else {
+        printf("\nNenhum registro foi encontrado.\n");
+    }
 };
 
-void insertActor(Actors **head) {
-  printf("\nDigite o Id (Inteiro positivo):\n");
-  int id;
-  char name[15];
-  Actors *newActor = (Actors *)malloc(sizeof(Actors));
-  Actors *aux = *head;
+void insertActor(Actors **head, int operation) {
 
-  // If there is less than or more than one successful scan it should error
-  if (scanf("%d", &id) != 1) {
-    return operationError();
-  };
-  printf("\nDigite o nome:\n");
-  if (scanf("%14s", name) != 1) {
-    return operationError();
-  };
-  newActor->id = id;
-  strcpy(newActor->name, name);
+    char name[15];
+    Actors *newActor = (Actors *) malloc(sizeof(Actors));
+    Actors *aux;
+    newActor->next = NULL;
 
-  if (aux) {
-    while (aux->next) {
-      if (aux->id == newActor->id) {
-        fprintf(stderr, "Esse ator já existe!\n");
-        free(newActor);
-        return;
-      }
-      aux = aux->next;
+    printf("\nDigite o nome:\n");
+    if (scanf("%14s", name) != 1) {
+        return operationError();
+    };
+    newActor->id = SEQUENTIAL_ID[operation];
+    strcpy(newActor->name, name);
+
+    if (*head == NULL) {
+        *head = newActor;
+    } else {
+        aux = *head;
+        while(aux->next)
+            aux = aux->next;
+        aux->next = newActor;
     }
-    aux->next = newActor;
-  } else {
-    *head = newActor;
-  }
-  printf("\nInserido!\n\n");
+    SEQUENTIAL_ID[operation]++;
+    printf("\nInserido!\n\n");
 }
 
 void removeActor(Actors **head) {
-  listActors(*head);
-  int id;
-  printf("\nDigite o Id (Inteiro positivo):\n");
-  // If there is less than or more than one successful scan it should error
-  if (scanf("%d", &id) != 1) {
-    return operationError();
-  };
+    listActors(*head);
+    int id;
+    printf("\nDigite o Id (Inteiro positivo):\n");
+    // If there is less than or more than one successful scan it should error
+    if (scanf("%d", &id) != 1) {
+        return operationError();
+    };
 
-  Actors *aux = *head;
+    Actors *aux = *head;
 
-  if (aux->id == id) {
-    *head = aux->next;
-  } else {
-    Actors *prev;
-    while (aux->id != id && aux->next) {
-      prev = aux;
-      aux = aux->next;
+    if (aux->id == id) {
+        *head = aux->next;
+    } else {
+        Actors *prev;
+        while (aux->id != id && aux->next) {
+            prev = aux;
+            aux = aux->next;
+        }
+        prev->next = aux->next;
     }
-    prev->next = aux->next;
-  }
-  if (aux) {
     printf("\nRemovido!\n");
     free(aux);
-  } else {
-    printf("\nID não encontrado.\n");
-  }
 };
 
 void enqueue(Message *newMessage, Queue *queue) {
-  Message *aux;
-  Message **messages = (Message **)queue->messages;
-  if (*messages == NULL) {
-    *messages = newMessage;
-  } else {
-    aux = *messages;
-    while (aux->next)
-      aux = aux->next;
-    aux->next = newMessage;
-  }
+    Message *aux;
+    Message **messages = queue->messages;
+    if (*messages == NULL) {
+        printf("fila de mensagem null\n");
+        *messages = newMessage;
+    } else {
+        aux = *messages;
+        printf("fila de mensagem nao null\n");
+        while (aux->next) {
+            aux = aux->next;
+        }
+
+        aux->next = newMessage;
+    }
 }
 
 void dequeue(Queue *queue) {
-  Message **messages = (Message **)queue->messages;
-  Message *aux = *messages;
+    Message **messages = (Message **) queue->messages;
+    Message *aux = *messages;
 
-  if (*messages == NULL) {
-    printf("\nA fila já está vazia!\n");
-  } else {
-    *messages = aux->next;
-    free(aux);
-  }
+    if (*messages == NULL) {
+        printf("\nA fila já está vazia!\n");
+    } else {
+        *messages = aux->next;
+        free(aux);
+    }
 }
 
 char *inputMessage() {
-  char *message = (char *)malloc(sizeof(char) * 50);
+    char *message = (char *) malloc(sizeof(char) * 50);
 
-  printf("\nDigite a mensagem a ser enviada:\n");
-  scanf("%49s", message);
-  printf("\n");
-  return message;
+    printf("\nDigite a mensagem a ser enviada:\n");
+    scanf("%49s", message);
+    printf("\n");
+    return message;
 }
 
-Actors *selectActor(Actors *head) {
-  int actorId = 0;
-  Actors *aux = head;
+Actors *selectActor(Actors *head, int operation) {
+    int actorId = 0;
+    Actors *aux = head;
 
-  listActors(head);
-  scanf("%d", &actorId);
-  while (aux->next && aux->id != actorId) {
-    aux = aux->next;
-  }
-  return aux;
+    listActors(head);
+    scanf("%d", &actorId);
+    while (aux->next && aux->id != actorId) {
+        printf("laco iterado\n");
+        aux = aux->next;
+    }
+    return aux;
 }
 
 void sendMessage(Queue **queue, Actors *emissor, int id_receptor,
                  char *content) {
-  Message *message = malloc(sizeof(Message));
-  Queue *aux = malloc(sizeof(Queue));
-  if (message && aux) {
-    message->id_emissor = emissor->id;
-    strcpy(message->content, content);
-    aux = *queue;
-    // erro
-    while (aux->next) {
-      if (aux->id_receptor == id_receptor) {
-        enqueue(message, aux);
-      }
-      aux = aux->next;
-    }
-  } else {
-    memoryAllocationError();
-  }
+    Message *message = malloc(sizeof(Message));
+    Queue *aux, *newNode = malloc(sizeof(Queue));
+
+//    if(message) {
+//        message->id_emissor = emissor->id;
+//        strcpy(message->content, content);
+//        message->next = NULL;
+//        if(*queue == NULL) {
+//            if(newNode != NULL) {
+//                newNode->id_receptor = id_receptor;
+//                newNode->messages = NULL;
+//                newNode->next = NULL;
+//                *queue = newNode;
+//                enqueue(message, queue);
+//            }
+//        } else {
+//            aux = *queue;
+//            while (aux) {
+//                if(aux->id_receptor == id_receptor)
+//                    enqueue(message, aux);
+//                aux = aux->next;
+//            }
+//        }
+//    }
+
+    if(message && newNode) {
+        message->id_emissor = emissor->id;
+        strcpy(message->content, content);
+        message->next = NULL;
+        newNode->messages = message;
+        newNode->id_receptor = id_receptor;
+        newNode->next = NULL;
+        if(*queue == NULL) {
+            *queue = newNode;
+        } else {
+            aux = *queue;
+            while (aux) {
+                if(aux->id_receptor == id_receptor)
+                    enqueue(message, aux);
+                aux = aux->next;
+            }
+            aux = *queue;
+            while(aux->next)
+                aux = aux->next;
+            aux->next = newNode;
+        }
+    } else
+        memoryAllocationError();
+//    if (message != NULL && aux != NULL) {
+//        message->id_emissor = emissor->id;
+//        strcpy(message->content, content);
+//        aux = *queue;
+//        // erro
+//        while (aux->next) {
+//            if (aux->id_receptor == id_receptor) {
+//                enqueue(message, aux);
+//            }
+//            aux = aux->next;
+//        }
+//    } else {
+//        memoryAllocationError();
+//    }
 }
 
 void listMessagesByReceptor(Queue *queue, int id_receptor) {
-  Queue *queueAux = queue;
-  if (queueAux) {
-    do {
-      if (queueAux->id_receptor == id_receptor) {
-        Message **messages = (Message **)queueAux->messages;
-        Message *aux = *messages;
-
-        if (messages) {
-          do {
-            printf("\nMensagem:\n");
-            printf("%s\n", aux->content);
-            aux = aux->next;
-
-          } while (aux->next);
-        }
-      }
-    } while (queueAux->next);
-  } else {
-    printf("\nNenhuma mensagem registrada para esse receptor\n");
-  }
+//    Queue *queueAux = queue;
+//    if(queue) {
+//        while(queue) {
+//            if(queue->id_receptor == id_receptor) {
+//                printf("fila encontrada");
+//                while (queue->messages) {
+//                    printf("mensagem encontrada");
+//                    printf("\nMensagem: ");
+//                    M
+//                    printf("%s\n", queue->(*messages)->content);
+//                    queue->messages = queue->messages->next;
+//                }
+//            }
+//            queue = queue->next;
+//        }
+//    } else
+//        printf("Nenhuma mensagem registrada\n");
+//    if (queueAux) {
+//        do {
+//            if (queueAux->id_receptor == id_receptor) {
+//                Message **messages = (Message **) queueAux->messages;
+//                Message *aux = *messages;
+//
+//                if (messages) {
+//                    do {
+//                        printf("\nMensagem:\n");
+//                        printf("%s\n", aux->content);
+//                        aux = aux->next;
+//
+//                    } while (aux->next);
+//                }
+//            }
+//        } while (queueAux->next);
+//    } else {
+//        printf("\nNenhuma mensagem registrada para esse receptor\n");
+//    }
 };
 
 //------------------------------------------------------
@@ -208,101 +263,98 @@ void listMessagesByReceptor(Queue *queue, int id_receptor) {
 //------------------------------------------------------
 void showInterface(Actors **sender_head, Actors **receiver_head,
                    Queue **messages) {
-  int userInput = -1;
+    int userInput = -1;
 
-  // TODO REVISAR OPERACOES POSSIVEIS
-  while (userInput != 0) {
-    printf("----------------- / ~ / -----------------\n");
-    printf("----------- SIMPLE MESSENGER -----------\n");
-    printf("----------------- / ~ / -----------------\n");
-    printf("\n-------------- OPERAÇÕES --------------\n");
-    printf("  1) Incluir emissor na lista de emissores \n");
-    printf("  2) Remover emissor da lista de emissores \n");
-    printf("  3) Consultar emissores: escrever na tela os emissores "
-           "cadastrados\n");
-    printf("  4) Incluir receptor na lista de receptores \n");
-    printf("  5) Remover receptor da lista de receptores: quando o receptor é "
-           "removido, sua fila de mensagens também é removida \n");
-    printf("  6) Consultar receptores: escrever na tela os receptores "
-           "cadastrados \n");
-    printf("  7) Enviar mensagem: um receptor cadastrado escreve a mensagem, e "
-           "define quais são os receptores (pelo menos um receptor). A "
-           "mensagem é enfileirada na fila de cada receptor. \n");
-    printf("  8) Retirar mensagem: um receptor cadastrado desenfileira uma "
-           "mensagem (apresentar mensagem de erro se a fila está vazia) \n ");
-    printf("  9) Consultar fila de mensagens: exibe a fila de mensagens de um "
-           "receptor \n");
-    printf("  0) Fechar o programa.\n");
-    // TODO AVALIAR FUNCOES POSSIVEIS
-    //  printf("  10) Outras operações (a seu critério), como: exibir receptores
-    //  "
-    //         "com fila vazia, exibir receptores com mais mensagens na fila, "
-    //         "exibir total de mensagens enviadas por um emissor, exibir total
-    //         de " "mensagens recebidas por um receptor \n");
+    // TODO REVISAR OPERACOES POSSIVEIS
+    while (userInput != 0) {
+        printf("----------------- / * / -----------------\n");
+        printf("----------- SIMPLE MESSENGER -----------\n");
+        printf("----------------- / * / -----------------\n");
+        printf("\n-------------- OPERACOES --------------\n");
+        printf("  1) Incluir emissor na lista de emissores \n");
+        printf("  2) Remover emissor da lista de emissores \n");
+        printf("  3) Consultar emissores\n");
+        printf("  4) Incluir receptor \n");
+        printf("  5) Remover receptor (AS MENSAGENS TAMBEM SERAO REMOVIDAS)\n");
+        printf("  6) Consultar receptores\n");
+        printf("  7) Enviar mensagem: emissor adiciona a mensagem para a fila de um (ou mais) receptor\n");
+        printf("  8) Retirar mensagem: um receptor desenfileira uma "
+               "mensagem (apresentar mensagem de erro se a fila está vazia) \n ");
+        printf("  9) Consultar fila de mensagens: exibe a fila de mensagens de um "
+               "receptor \n");
+        printf("  0) Fechar o programa.\n");
+        // TODO AVALIAR FUNCOES POSSIVEIS
+        //  printf("  10) Outras operações (a seu critério), como: exibir receptores
+        //  "
+        //         "com fila vazia, exibir receptores com mais mensagens na fila, "
+        //         "exibir total de mensagens enviadas por um emissor, exibir total
+        //         de " "mensagens recebidas por um receptor \n");
 
-    scanf("%d", &userInput);
+        scanf("%d", &userInput);
 
-    switch (userInput) {
-    case 0:
-      printf("\n\n\n\nEncerrando... \n\n\n\n");
-      break;
-    case 1:
-      printf("\n\n\n\nIncluir emissor na lista de emissores \n\n\n\n");
-      insertActor(sender_head);
-      break;
-    case 2:
-      printf("\n\n\n\nRemover emissor da lista de emissores \n\n\n\n");
-      removeActor(sender_head);
-      break;
-    case 3:
-      printf("\n\n\n\nListar emissores \n\n\n\n");
-      listActors(*sender_head);
-      break;
-    case 4:
-      printf("\n\n\n\nIncluir receptor na lista de receptores\n\n\n\n");
-      insertActor(receiver_head);
-      break;
-    case 5:
-      printf("\n\n\n\nRemover receptor da lista de receptores\n\n\n\n");
-      removeActor(receiver_head);
-      break;
-    case 6:
-      printf("\n\n\n\nListar receptores\n\n\n\n");
-      listActors(*receiver_head);
-      break;
-    case 7:
-      printf("\n\n\n\nEnviar mensagem\n\n\n\n");
+        switch (userInput) {
+            case 0:
+                printf("\n\n\n\nEncerrando... \n\n\n\n");
+                break;
+            case 1:
+                printf("\n\n\n\nIncluir emissor na lista de emissores \n\n\n\n");
+                insertActor(sender_head, INDEX_SENDER);
+                break;
+            case 2:
+                printf("\n\n\n\nRemover emissor da lista de emissores \n\n\n\n");
+                removeActor(sender_head);
+                break;
+            case 3:
+                printf("\n\n\n\nListar emissores \n\n\n\n");
+                listActors(*sender_head);
+                break;
+            case 4:
+                printf("\n\n\n\nIncluir receptor na lista de receptores\n\n\n\n");
+                insertActor(receiver_head, INDEX_RECEIVER);
+                break;
+            case 5:
+                printf("\n\n\n\nRemover receptor da lista de receptores\n\n\n\n");
+                removeActor(receiver_head);
+                break;
+            case 6:
+                printf("\n\n\n\nListar receptores\n\n\n\n");
+                listActors(*receiver_head);
+                break;
+            case 7:
+                printf("\n\n\n\nEnviar mensagem\n\n\n\n");
 
-      printf("\nDigite o id do emissor desejado:\n");
-      Actors *sender = selectActor(*sender_head);
-      printf("\nDigite o id do receptor desejado:\n");
-      int receiver_id = selectActor(*receiver_head)->id;
-      sendMessage(messages, sender, receiver_id, inputMessage());
-      break;
-    case 8:
-      printf("\n\n\n\nConcluir/remover mensagem\n\n\n\n");
-      dequeue(*messages);
-      break;
-    case 9:
-      printf("\n\n\n\nConsultar mensagens\n\n\n\n");
-      printf("\nDigite o id do receptor desejado:\n");
-      listMessagesByReceptor(*messages, selectActor(*receiver_head)->id);
-      break;
+                printf("\nDigite o id do emissor desejado:\n");
+                Actors *sender = selectActor(*sender_head, INDEX_SENDER);
+                printf("\nDigite o id do receptor desejado:\n");
+                int receiver_id = selectActor(*receiver_head, INDEX_RECEIVER)->id;
+                sendMessage(messages, sender, receiver_id, inputMessage());
+                break;
+            case 8:
+                printf("\n\n\n\nConcluir/remover mensagem\n\n\n\n");
+                dequeue(*messages);
+                break;
+            case 9:
+                printf("\n\n\n\nConsultar mensagens\n\n\n\n");
+                printf("\nDigite o id do receptor desejado:\n");
+                listMessagesByReceptor(*messages, selectActor(*receiver_head, INDEX_RECEIVER)->id);
+                break;
 
-    default:
-      printf("\n\n\n\nNão foi possível compreender o comando! \n\n\n\n");
-      break;
-    }
-  };
+            default:
+                printf("\n\n\n\nNão foi possível compreender o comando! \n\n\n\n");
+                break;
+        }
+    };
 }
 //------------------------------------------------------
 
 int main() {
-  Actors *emissores = NULL;
-  Actors *receptores = NULL;
-  Queue *message_queues = NULL;
+    SEQUENTIAL_ID[INDEX_SENDER] = 0;
+    SEQUENTIAL_ID[INDEX_RECEIVER] = 0;
+    Actors *emissores = NULL;
+    Actors *receptores = NULL;
+    Queue *message_queues = NULL;
 
-  showInterface(&emissores, &receptores, &message_queues);
+    showInterface(&emissores, &receptores, &message_queues);
 
-  return 0;
+    return 0;
 }
