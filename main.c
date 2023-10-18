@@ -189,7 +189,6 @@ void sendMessage(Queue **queue, Actors *emissor, int id_receptor, char *content)
 }
 
 void listMessagesByReceptor(Queue *queue, int id_receptor) {
-//    Queue *queueAux = queue;
     if(queue) {
         while(queue) {
             if(queue->id_receptor == id_receptor) {
@@ -204,23 +203,6 @@ void listMessagesByReceptor(Queue *queue, int id_receptor) {
         }
     } else
         printf("Nenhuma mensagem registrada\n");
-//    if (queueAux) {
-//        do {
-//            if (queueAux->id_receptor == id_receptor) {
-//                Message **messages = (Message **) queueAux->messages;
-//                Message *aux = *messages;
-//
-//                do {
-//                    printf("\nMensagem:\n");
-//                    printf("%s\n", aux->content);
-//                    aux = aux->next;
-//
-//                } while (aux->next);
-//            }
-//        } while (queueAux->next);
-//    } else {
-//        printf("\nNenhuma mensagem registrada para esse receptor\n");
-//    }
 };
 
 //------------------------------------------------------
